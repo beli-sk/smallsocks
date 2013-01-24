@@ -15,7 +15,8 @@ These are the current features and limitations:
 License
 -------
 
-```smallSocks
+```
+smallSocks
 
 Copyright 2013 Michal Belica | devel *at* beli *dot* sk
 
