@@ -8,9 +8,15 @@ Project status
 
 These are the current features and limitations:
 
-  * SOCKS v4 protocol is supported
-  * foreground operation only (no daemon)
+  * SOCKS4 protocol is supported
+  * fork into background (daemon)
+  * logging through syslog
   * listens on `localhost`, port *1080*
+
+OS support
+----------
+
+Unix-like systems with Python and syslog.
 
 License
 -------
