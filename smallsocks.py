@@ -119,9 +119,16 @@ def recv_socks_request(sock):
             'ver': bin2int(data[0:1]),
             'cmd': bin2int(data[1:2]),
             'port': bin2int(data[2:4]),
-            'IP': socket.inet_ntoa(data[4:8]),
-            'user': recv_strz(sock, 254)
+            'user': recv_strz(sock, 254),
             }
+    # check for SOCKS4a request (IP looks like 0.0.0.x, x > 0)
+    ipint = bin2int(data[4:8])
+    if req['ver'] == 4 and ipint > 0 and ipint < 256:
+        # SOCKS4a
+        req['host'] = recv_strz(sock, 253)
+    else:
+        req['IP'] = socket.inet_ntoa(data[4:8])
+        
     return req
 
 def send_socks_response(sock, status = True):
