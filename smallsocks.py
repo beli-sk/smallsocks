@@ -23,7 +23,18 @@ import struct
 import socket
 import select
 import signal
-from pprint import pprint
+import daemon
+from syslog import syslog, openlog, LOG_INFO, LOG_NOTICE, LOG_WARNING,\
+        LOG_ERR, LOG_PID, LOG_DAEMON
+
+class SocksError(Exception):
+    def __init__(self, value = None):
+        self.value = value
+    def __str__(self):
+        return self.value
+
+class Disconnect(SocksError): pass
+class BadRequest(SocksError): pass
 
 class ThreadTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
     allow_reuse_address = True
@@ -33,22 +44,17 @@ class ThreadTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
         (t, value) = sys.exc_info()[:2]
         if t == socket.error:
             etype = 'Socket error'
+            prio = LOG_WARNING
         elif t == socket.herror or t == socket.gaierror:
             etype = 'Resolver error'
+            prio = LOG_WARNING
+        elif t == Disconnect:
+            etype = t.__name__
+            prio = LOG_INFO
         else:
             etype = t.__name__
-        print "%s: %s" % (etype, value)
-
-class SocksError(Exception):
-    def __init__(self, value = None):
-        self.value = value
-    def __str__(self):
-        return self.value
-    def __repr__(self):
-        return self.__str__()
-
-class Disconnect(SocksError): pass
-class BadRequest(SocksError): pass
+            prio = LOG_WARNING
+        syslog(prio, "%s: %s" % (etype, value))
 
 def recv_strz(sock, maxlen = 65530):
     """Receive a zero terminated string on socket
@@ -65,7 +71,7 @@ def recv_strz(sock, maxlen = 65530):
             raise Exception('Long read on socket')
         elif ord(c) == 0:
             break
-        data += d
+        data += c
         l += ld
         if l > maxlen:
             raise ValueError('String too long')
@@ -145,12 +151,13 @@ def socks_data_loop(sock, outsock):
                 sock.sendall(data)
 
 def log_request(address, req, status = True):
-    print "Connection from %s:%d to %s:%d by \"%s\" %s" % (
+    prio = LOG_NOTICE if status else LOG_WARNING
+    syslog(prio, "Connection from %s:%d to %s:%d by \"%s\" %s" % (
             address[0], address[1],
             req['IP'], req['port'],
             req['user'],
             'succeeded' if status else 'failed'
-            )
+            ))
 
 class SocksTCPHandler(SocketServer.BaseRequestHandler):
     def handle(self):
@@ -177,17 +184,18 @@ class SocksTCPHandler(SocketServer.BaseRequestHandler):
 def sighandler(signum, frame):
     global shutdown
     if signum == signal.SIGINT or signum == signal.SIGTERM:
-        print "received signal %d, shutting down" % signum
+        syslog(LOG_NOTICE, "received signal %d, shutting down" % signum)
         shutdown = True
 
-if __name__ == "__main__":
+def server_process():
     global shutdown
     shutdown = False
     HOST, PORT = "localhost", 1080
+    openlog(ident='smallsocks', logoption=LOG_PID, facility=LOG_DAEMON)
     server = ThreadTCPServer((HOST, PORT), SocksTCPHandler)
     signal.signal(signal.SIGINT, sighandler)
     signal.signal(signal.SIGTERM, sighandler)
-    print "smallSocks initialized, listening on %s port %d" % (HOST, PORT)
+    syslog(LOG_NOTICE, "smallSocks initialized, listening on %s port %d" % (HOST, PORT))
     while not shutdown:
         try:
             server.handle_request()
@@ -197,4 +205,8 @@ if __name__ == "__main__":
                 pass
             else:
                 raise
-    print "smallSocks finished"
+    syslog(LOG_NOTICE, "smallSocks finished")
+
+if __name__ == "__main__":
+    with daemon.DaemonContext(stdout=sys.stdout, stderr=sys.stderr):
+        server_process()
