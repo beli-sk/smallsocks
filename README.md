@@ -9,6 +9,7 @@ Project status
 These are the current features and limitations:
 
   * SOCKS4 protocol is supported
+  * only *connect* command is supported, not *bind*
   * fork into background (daemon)
   * logging through syslog
   * listens on `localhost`, port *1080*
