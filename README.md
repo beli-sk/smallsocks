@@ -8,7 +8,7 @@ Project status
 
 These are the current features and limitations:
 
-  * SOCKS4 protocol is supported
+  * SOCKS4 and 4a protocols are supported
   * only *connect* command is supported, not *bind*
   * fork into background (daemon)
   * logging through syslog
