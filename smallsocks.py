@@ -24,8 +24,8 @@ import socket
 import select
 import signal
 import daemon
-from syslog import syslog, openlog, LOG_INFO, LOG_NOTICE, LOG_WARNING,\
-        LOG_ERR, LOG_PID, LOG_DAEMON
+from syslog import syslog, openlog, LOG_DEBUG, LOG_INFO, LOG_NOTICE, \
+        LOG_WARNING, LOG_ERR, LOG_PID, LOG_DAEMON
 
 class SocksError(Exception):
     def __init__(self, value = None):
@@ -131,8 +131,13 @@ def recv_socks_request(sock):
         
     return req
 
-def send_socks_response(sock, status = True):
-    data = struct.pack('!BBHL', 0, 0x5a if status else 0x5b, 0, 0)
+def send_socks_response(sock, status=True, address=None):
+    data = struct.pack('!BB', 0, 0x5a if status else 0x5b)
+    if address:
+        data += struct.pack('!H', address[1])
+        data += socket.inet_aton(address[0])
+    else:
+        data += struct.pack('!HL', 0, 0)
     sock.sendall(data)
 
 def socks_data_loop(sock, outsock):
@@ -161,10 +166,42 @@ def log_request(address, req, status = True):
     prio = LOG_NOTICE if status else LOG_WARNING
     syslog(prio, "Connection from %s:%d to %s:%d by \"%s\" %s" % (
             address[0], address[1],
-            req['IP'], req['port'],
+            req['IP'] if 'IP' in req else req['host'], req['port'],
             req['user'],
             'succeeded' if status else 'failed'
             ))
+
+def create_connection(address, family=0, timeout=5):
+    """Create a TCP connection
+
+    Takes address as a tuple of (host,port), resolves host and connects to all
+    possible addresses until one succeeds. Addresses can be limited
+    by specifying family.
+
+    Returns (socket, family, addr, port)
+    """
+    addr,port = address
+    if family != 0:       sfamily = family
+    elif socket.has_ipv6: sfamily = socket.AF_INET6
+    else:                 sfamily = socket.AF_INET
+    ais = socket.getaddrinfo(addr, port, family, socket.SOCK_STREAM)
+    s = socket.socket(sfamily, socket.SOCK_STREAM)
+    s.settimeout(timeout)
+    connected = False
+    for ai in ais:
+        (fam, st, pr, cn, sa) = ai
+        syslog(LOG_INFO, "Trying address %s" % sa[0])
+        try:
+            s.connect(sa)
+        except Exception as e:
+            exc = e
+        else:
+            connected = True
+            break
+    if connected:
+        return (s,fam) + sa
+    else:
+        raise exc # Exception from last connect attempt
 
 class SocksTCPHandler(SocketServer.BaseRequestHandler):
     def handle(self):
@@ -176,14 +213,23 @@ class SocksTCPHandler(SocketServer.BaseRequestHandler):
         elif req['cmd'] != 1:
             send_socks_response(sock, False)
             raise BadRequest("Unsupported command %d" % req['cmd'])
+        if 'IP' in req:
+            remaddr = req['IP']
+        else:
+            remaddr = req['host']
+        if req['ver'] == 4:
+            remfamily = socket.AF_INET
+        else:
+            remfamily = 0 # any family
         # create requested outgoing connection
         try:
-            outsock = socket.create_connection((req['IP'], req['port']))
+            conn = create_connection((remaddr, req['port']), remfamily)
         except Exception:
             log_request(self.client_address, req, False)
             send_socks_response(sock, False)
             raise
-        send_socks_response(sock)
+        (outsock, remfamily, remaddr, remport) = conn
+        send_socks_response(sock, (remaddr, remport))
         log_request(self.client_address, req)
         # pass data between sockets
         socks_data_loop(sock, outsock)
