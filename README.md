@@ -13,6 +13,7 @@ These are the current features and limitations:
   * fork into background (daemon)
   * logging through syslog
   * listens on `localhost`, port *1080*
+  * no access control
 
 OS support
 ----------
