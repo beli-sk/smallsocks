@@ -112,7 +112,7 @@ def send_socks_response(sock, status=True, address=None):
         data += struct.pack('!HL', 0, 0)
     sock.sendall(data)
 
-def socks_data_loop(sock, outsock, shutdown):
+def socks_data_loop(sock, outsock, shutdown, bufsize):
     while True:
         (rtr, rtw, err) = select.select([sock, outsock], [], [sock, outsock], 1)
         if shutdown.is_set(): break
@@ -123,7 +123,7 @@ def socks_data_loop(sock, outsock, shutdown):
                 direction = 2 # from remote to client
             else:
                 raise Exception("Unknown socket found in loop!")
-            data = s.recv(1024)
+            data = s.recv(bufsize)
             if len(data) == 0:
                 if direction == 1:
                     raise Disconnect('Client disconnected')

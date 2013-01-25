@@ -22,6 +22,7 @@ HOST, PORT = "localhost", 1080
 PIDFILE = '/tmp/smallsocks.pid'
 WORKDIR = '/'
 LIBDIR = 'lib/'
+XBUFFER = 8192 # transmission buffer, bytes per connection
 
 import os
 import sys
@@ -100,7 +101,7 @@ class SocksTCPHandler(SocketServer.BaseRequestHandler):
         socks.send_socks_response(sock, (remaddr, remport))
         socks.log_request(self.client_address, req)
         # pass data between sockets
-        socks.socks_data_loop(sock, outsock, self.server.shutdown_event)
+        socks.socks_data_loop(sock, outsock, self.server.shutdown_event, XBUFFER)
 
 def server_process():
     signal.signal(signal.SIGINT, sighandler)
