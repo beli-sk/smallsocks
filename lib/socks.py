@@ -21,7 +21,6 @@ import struct
 import select
 import socket
 import logging
-from pprint import pprint
 
 logger = logging.getLogger('smallsocks')
 
@@ -157,7 +156,6 @@ def create_connection(address, family=0, timeout=5):
     if family != 0:       sfamily = family
     elif socket.has_ipv6: sfamily = socket.AF_INET6
     else:                 sfamily = socket.AF_INET
-    pprint(address)
     ais = socket.getaddrinfo(addr, port, family, socket.SOCK_STREAM)
     s = socket.socket(sfamily, socket.SOCK_STREAM)
     s.settimeout(timeout)

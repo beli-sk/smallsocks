@@ -101,8 +101,6 @@ class SocksTCPHandler(SocketServer.BaseRequestHandler):
         socks.log_request(self.client_address, req)
         # pass data between sockets
         socks.socks_data_loop(sock, outsock, self.server.shutdown_event)
-    def finish(self):
-        logger.debug("thread finished")
 
 def server_process():
     signal.signal(signal.SIGINT, sighandler)
