@@ -17,15 +17,54 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see http://www.gnu.org/licenses/.
 """
 
+HOST, PORT = "localhost", 1080
+PIDFILE = '/smallsocks.pid'
+CHROOT = '/var/empty'
+WORKDIR = '/' # inside chroot, if CHROOT is set
+
+import os
 import sys
-import SocketServer
+import fcntl
 import struct
 import socket
 import select
 import signal
 import daemon
+import SocketServer
 from syslog import syslog, openlog, LOG_DEBUG, LOG_INFO, LOG_NOTICE, \
         LOG_WARNING, LOG_ERR, LOG_PID, LOG_DAEMON
+
+class PidFile(object):
+    """Context manager that locks a pid file.  Implemented as class
+    not generator because daemon.py is calling .__exit__() with no parameters
+    instead of the None, None, None specified by PEP-343."""
+    # pylint: disable=R0903
+
+    def __init__(self, path):
+        self.path = path
+        self.pidfile = None
+
+    def __enter__(self):
+        self.pidfile = open(self.path, "a+")
+        try:
+            fcntl.flock(self.pidfile.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except IOError:
+            raise SystemExit("Already running according to " + self.path)
+        self.pidfile.seek(0)
+        self.pidfile.truncate()
+        self.pidfile.write(str(os.getpid()))
+        self.pidfile.flush()
+        self.pidfile.seek(0)
+        return self.pidfile
+
+    def __exit__(self, exc_type=None, exc_value=None, exc_tb=None):
+        try:
+            self.pidfile.close()
+        except IOError as err:
+            # ok if file was just closed elsewhere
+            if err.errno != 9:
+                raise
+        os.remove(self.path)
 
 class SocksError(Exception):
     def __init__(self, value = None):
@@ -36,25 +75,38 @@ class SocksError(Exception):
 class Disconnect(SocksError): pass
 class BadRequest(SocksError): pass
 
+def exception_handler(t=None, value=None, traceback=None):
+    """Handle exceptions politely (with syslog)"""
+    del traceback
+    if not t:
+        exit = False
+        (t, value) = sys.exc_info()[:2]
+    else:
+        exit = True
+    if t == socket.error:
+        etype = 'Socket error'
+        prio = LOG_WARNING
+    elif t == socket.herror or t == socket.gaierror:
+        etype = 'Resolver error'
+        prio = LOG_WARNING
+    elif t == Disconnect:
+        etype = t.__name__
+        prio = LOG_INFO
+    else:
+        try:
+            etype = t.__name__
+        except:
+            etype = t
+        prio = LOG_WARNING
+    syslog(prio, "%s: %s" % (etype, value))
+    if exit:
+        exit(1)
+
 class ThreadTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
     allow_reuse_address = True
     timeout = 1
     def handle_error(self, request, client_address):
-        """Handle exceptions politely"""
-        (t, value) = sys.exc_info()[:2]
-        if t == socket.error:
-            etype = 'Socket error'
-            prio = LOG_WARNING
-        elif t == socket.herror or t == socket.gaierror:
-            etype = 'Resolver error'
-            prio = LOG_WARNING
-        elif t == Disconnect:
-            etype = t.__name__
-            prio = LOG_INFO
-        else:
-            etype = t.__name__
-            prio = LOG_WARNING
-        syslog(prio, "%s: %s" % (etype, value))
+        exception_handler()
 
 def recv_strz(sock, maxlen = 65530):
     """Receive a zero terminated string on socket
@@ -242,13 +294,15 @@ def sighandler(signum, frame):
 
 def server_process():
     global shutdown
+    global server
+    global devnull
     shutdown = False
-    HOST, PORT = "localhost", 1080
-    openlog(ident='smallsocks', logoption=LOG_PID, facility=LOG_DAEMON)
-    server = ThreadTCPServer((HOST, PORT), SocksTCPHandler)
     signal.signal(signal.SIGINT, sighandler)
     signal.signal(signal.SIGTERM, sighandler)
     syslog(LOG_NOTICE, "smallSocks initialized, listening on %s port %d" % (HOST, PORT))
+    # redirect stdout/err to /dev/null after initialization complete
+    daemon.daemon.redirect_stream(sys.stdout, devnull)
+    daemon.daemon.redirect_stream(sys.stderr, devnull)
     while not shutdown:
         try:
             server.handle_request()
@@ -261,5 +315,21 @@ def server_process():
     syslog(LOG_NOTICE, "smallSocks finished")
 
 if __name__ == "__main__":
-    with daemon.DaemonContext(stdout=sys.stdout, stderr=sys.stderr):
+    openlog(ident='smallsocks', logoption=LOG_PID, facility=LOG_DAEMON)
+    try:
+        server = ThreadTCPServer((HOST, PORT), SocksTCPHandler)
+    except:
+        exception_handler()
+        exit(1)
+    devnull = open(os.devnull, "r+")
+    with daemon.DaemonContext(
+            # when following is commented, redirects stdout/err to /dev/null
+            stdin=devnull,
+            stdout=sys.stdout,
+            stderr=sys.stderr,
+            files_preserve=[server] + range(10),
+            pidfile=PidFile(PIDFILE),
+            chroot_directory=CHROOT,
+            working_directory=WORKDIR,
+            ) as context:
         server_process()
