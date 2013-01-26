@@ -18,12 +18,11 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see http://www.gnu.org/licenses/.
 """
 
-CONFIGFILE = 'smallsocks.conf'
-LIBDIR = 'lib/'
+CONFIGFILE = '/etc/smallsocks.conf'
 defaults = {
         'listen_address': 'localhost',
         'listen_port': '1080',
-        'pid_file': '/tmp/smallsocks.pid',
+        'pid_file': '/var/run/smallsocks.pid',
         'working_directory': '/',
         'buffer_size': '8192',
         'syslog_socket': '/dev/log',
@@ -39,6 +38,9 @@ import threading
 import SocketServer
 import ConfigParser
 from logging.handlers import SysLogHandler
+
+from smallsockslib.daemon import Daemon, PidFile
+import smallsockslib.socks
 
 def exception_handler(t=None, value=None, traceback=None):
     """Handle exceptions politely (with syslog)"""
@@ -128,10 +130,6 @@ def server_process():
     logger.info("smallSocks finished")
 
 if __name__ == "__main__":
-    # replace current dir in path with LIBDIR
-    sys.path[0] = LIBDIR
-    from daemon import Daemon, PidFile
-    import socks
 
     config = ConfigParser.RawConfigParser(defaults)
     config.read(CONFIGFILE)
