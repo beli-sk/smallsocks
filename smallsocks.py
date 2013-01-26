@@ -18,11 +18,16 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see http://www.gnu.org/licenses/.
 """
 
-HOST, PORT = "localhost", 1080
-PIDFILE = '/tmp/smallsocks.pid'
-WORKDIR = '/'
+CONFIGFILE = 'smallsocks.conf'
 LIBDIR = 'lib/'
-XBUFFER = 8192 # transmission buffer, bytes per connection
+defaults = {
+        'listen_address': 'localhost',
+        'listen_port': '1080',
+        'pid_file': '/tmp/smallsocks.pid',
+        'working_directory': '/',
+        'buffer_size': '8192',
+        'syslog_socket': '/dev/log',
+        }
 
 import os
 import sys
@@ -32,6 +37,7 @@ import signal
 import logging
 import threading
 import SocketServer
+import ConfigParser
 from logging.handlers import SysLogHandler
 
 def exception_handler(t=None, value=None, traceback=None):
@@ -127,22 +133,40 @@ if __name__ == "__main__":
     from daemon import Daemon, PidFile
     import socks
 
+    config = ConfigParser.RawConfigParser(defaults)
+    config.read(CONFIGFILE)
+
     logger = logging.getLogger('smallsocks')
     logger.setLevel(logging.DEBUG)
-    handler = SysLogHandler(address='/dev/log', facility=SysLogHandler.LOG_DAEMON)
+    handler = SysLogHandler(address=config.get('DEFAULT', 'syslog_socket'), facility=SysLogHandler.LOG_DAEMON)
     formatter = logging.Formatter('%(module)s[%(process)d][%(threadName)s] %(message)s')
     handler.setFormatter(formatter)
     logger.addHandler(handler)
+
+    HOST = config.get('DEFAULT', 'listen_address')
+    PORT = config.getint('DEFAULT', 'listen_port')
+    XBUFFER = config.getint('DEFAULT', 'buffer_size')
+
+    try:
+        USER = config.get('DEFAULT', 'user')
+    except:
+        USER = None
+    try:
+        GROUP = config.get('DEFAULT', 'group')
+    except:
+        GROUP = None
 
     try:
         server = ThreadTCPServer((HOST, PORT), SocksTCPHandler)
         daemon = Daemon(
             stdout=sys.stdout,
             stderr=sys.stderr,
-            chdir=WORKDIR,
+            chdir=config.get('DEFAULT', 'working_directory'),
+            user=USER,
+            group=GROUP,
             )
         daemon.daemonize()
-        with PidFile(PIDFILE):
+        with PidFile(config.get('DEFAULT', 'pid_file')):
             server_process()
     except:
         exception_handler()
