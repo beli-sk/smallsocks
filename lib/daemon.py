@@ -20,6 +20,7 @@ along with smallSocks.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
 import pwd
+import grp
 import sys
 import fcntl
 import resource
@@ -52,14 +53,37 @@ class Daemon():
         """Create a configured daemonizer instance"""
         self.chroot = chroot
         self.chdir = chdir
-        if type(user) is str:
-            self.uid = pwd.getpwnam(user)['pw_uid']
+        # try to convert user and group to integer
+        # if specified as integer in a string
+        try:
+            user = int(user)
+        except:
+            pass
+        try:
+            group = int(group)
+        except:
+            pass
+
+        pwent = None
+        if type(user) is str or type(user) is unicode:
+            # user field contains a user name
+            pwent = pwd.getpwnam(user)
+            self.uid = pwent.pw_uid
         else:
+            # or user ID
             self.uid = user
-        if type(group) is str:
-            self.gid = grp.getgrpnam(group)['gr_gid']
+        if type(group) is str or type(group) is unicode:
+            # group field contains a group name
+            self.gid = grp.getgrnam(group).gr_gid
         else:
+            # or group ID
             self.gid = group
+
+        if self.uid is not None and self.gid is None:
+            # use user's default group if a user is specified and group is not
+            if not pwent:
+                pwent = pwd.getpwuid(self.uid)
+            self.gid = pwent.pw_gid
         self.stdin = stdin
         self.stdout = stdout
         self.stderr = stderr
