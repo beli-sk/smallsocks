@@ -6,14 +6,17 @@ Small SOCKS server implementation in Python.
 Project status
 --------------
 
-These are the current features and limitations:
+Currently supported features:
 
   * SOCKS4 and 4a protocols are supported
-  * only *connect* command is supported, not *bind*
   * fork into background (daemon)
   * logging through syslog
-  * listens on `localhost`, port *1080*
+  * reads config file
+
+Limitations:
+
   * no access control
+  * only *connect* command is supported, not *bind*
 
 OS support
 ----------
