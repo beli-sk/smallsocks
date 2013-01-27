@@ -23,6 +23,21 @@ OS support
 
 Unix-like systems with Python and syslog.
 
+Download
+--------
+
+### Release 0.1.0 alpha 1
+
+Python source package:
+[smallsocks-0.1.0a1.tar.gz](https://www.dropbox.com/s/13tmloe4dwsw5lv/smallsocks-0.1.0a1.tar.gz)
+
+Debian/Ubuntu package:
+[smallsocks_0.1.0a1-1_all.deb](https://www.dropbox.com/s/azfow7cu374pzb7/smallsocks_0.1.0a1-1_all.deb)
+| [SHA1](https://www.dropbox.com/s/92seqekf491hj35/smallsocks_0.1.0a1-1_all.deb.sha1)
+| [GPG sig](https://www.dropbox.com/s/14xdk3m2gpx0ta8/smallsocks_0.1.0a1-1_all.deb.sig)
+| package source: [.dsc](https://www.dropbox.com/s/ci7i0cm3mmfqzr3/smallsocks_0.1.0a1-1.dsc)
+| [.changes](https://www.dropbox.com/s/6ff0bdjxpdsos9b/smallsocks_0.1.0a1-1_amd64.changes)
+
 License
 -------
 
