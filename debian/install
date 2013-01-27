@@ -1,2 +1,1 @@
-init/smallsocks.conf etc/init/smallsocks.conf
-init/smallsocks.default etc/default/smallsocks
+init/smallsocks.conf etc/init/

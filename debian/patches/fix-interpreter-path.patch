@@ -26,7 +26,7 @@ Change interpreter lines according to debian standards.
 --- a/smallsockslib/socks.py
 +++ b/smallsockslib/socks.py
 @@ -1,4 +1,4 @@
--#!/usr/bin/env/python
+-#!/usr/bin/env python
 +#!/usr/bin/python
  
  """Socks server utility functions
