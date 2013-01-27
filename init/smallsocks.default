@@ -4,4 +4,4 @@
 
 # please add no extra whitespace to the "service_run" line below
 # valid values are "true" and "false", without the quotes
-server_run=true
+server_run=false

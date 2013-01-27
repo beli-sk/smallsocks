@@ -1,32 +1,24 @@
 #!/usr/bin/env python
 
-"""smallSocks
+"""smallSocks application
 
 Copyright 2013 Michal Belica <devel@beli.sk>
 
-This program is free software: you can redistribute it and/or modify
+This file is part of smallSocks.
+
+smallSocks is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
 
-This program is distributed in the hope that it will be useful,
+smallSocks is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
-along with this program.  If not, see http://www.gnu.org/licenses/.
+along with smallSocks.  If not, see <http://www.gnu.org/licenses/>.
 """
-
-CONFIGFILE = '/etc/smallsocks.conf'
-defaults = {
-        'listen_address': 'localhost',
-        'listen_port': '1080',
-        'pid_file': '/var/run/smallsocks.pid',
-        'working_directory': '/',
-        'buffer_size': '8192',
-        'syslog_socket': '/dev/log',
-        }
 
 import os
 import sys
@@ -39,8 +31,8 @@ import SocketServer
 import ConfigParser
 from logging.handlers import SysLogHandler
 
-from smallsockslib.daemon import Daemon, PidFile
-import smallsockslib.socks
+from daemon import Daemon, PidFile
+import socks
 
 def exception_handler(t=None, value=None, traceback=None):
     """Handle exceptions politely (with syslog)"""
@@ -109,7 +101,8 @@ class SocksTCPHandler(SocketServer.BaseRequestHandler):
         socks.send_socks_response(sock, (remaddr, remport))
         socks.log_request(self.client_address, req)
         # pass data between sockets
-        socks.socks_data_loop(sock, outsock, self.server.shutdown_event, XBUFFER)
+        socks.socks_data_loop(sock, outsock, self.server.shutdown_event,
+                self.server.xbuffer)
 
 def server_process():
     signal.signal(signal.SIGINT, sighandler)
@@ -117,7 +110,7 @@ def server_process():
     shutdown = threading.Event()
     shutdown.clear()
     server.shutdown_event = shutdown
-    logger.info("smallSocks initialized, listening on %s port %d" % (HOST, PORT))
+    logger.info("smallSocks initialized, listening on %s port %d" % server.server_address)
     while not shutdown.is_set():
         try:
             server.handle_request()
@@ -129,7 +122,9 @@ def server_process():
                 raise
     logger.info("smallSocks finished")
 
-if __name__ == "__main__":
+def run(CONFIGFILE, defaults):
+    global logger
+    global server
 
     config = ConfigParser.RawConfigParser(defaults)
     config.read(CONFIGFILE)
@@ -156,6 +151,7 @@ if __name__ == "__main__":
 
     try:
         server = ThreadTCPServer((HOST, PORT), SocksTCPHandler)
+        server.xbuffer = XBUFFER
         daemon = Daemon(
             stdout=sys.stdout,
             stderr=sys.stderr,

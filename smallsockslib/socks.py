@@ -1,5 +1,8 @@
 #!/usr/bin/env/python
+
 """Socks server utility functions
+
+Copyright 2013 Michal Belica <devel@beli.sk>
 
 This file is part of smallSocks.
 

@@ -21,11 +21,8 @@ setup(
         license='GNU General Public License v3 or later (GPLv3+)',
 
         packages=['smallsockslib'],
-        scripts=['smallsocks'],
+        scripts=['bin/smallsocks'],
         data_files=[
             ('/etc', ['smallsocks.conf']),
-            ('/etc/init', ['init/smallsocks.conf']),
-            ('/etc/default', ['init/smallsocks']),
-            ('share/doc/smallsocks', ['LICENSE', 'README.md']),
             ]
         )

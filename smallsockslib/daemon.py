@@ -2,6 +2,8 @@
 
 """Unix daemon tools module
 
+Copyright 2013 Michal Belica <devel@beli.sk>
+
 This file is part of smallSocks.
 
 smallSocks is free software: you can redistribute it and/or modify
