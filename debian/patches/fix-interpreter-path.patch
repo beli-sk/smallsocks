@@ -1,0 +1,33 @@
+Change interpreter lines according to debian standards.
+--- a/bin/smallsocks
++++ b/bin/smallsocks
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python
++#!/usr/bin/python
+ 
+ """smallSocks starter
+ 
+--- a/smallsockslib/daemon.py
++++ b/smallsockslib/daemon.py
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python
++#!/usr/bin/python
+ 
+ """Unix daemon tools module
+ 
+--- a/smallsockslib/smallsocksapp.py
++++ b/smallsockslib/smallsocksapp.py
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python
++#!/usr/bin/python
+ 
+ """smallSocks application
+ 
+--- a/smallsockslib/socks.py
++++ b/smallsockslib/socks.py
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env/python
++#!/usr/bin/python
+ 
+ """Socks server utility functions
+ 
