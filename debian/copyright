@@ -1,0 +1,9 @@
+Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: smallSocks
+Upstream-Contact: Michal Belica <devel@beli.sk>
+Source: https://github.com/beli-sk/smallsocks
+Copyright: Copyright 2013 Michal Belica <devel@beli.sk>
+
+Files: *
+License: GPL-3+
+ /usr/share/common-licenses/GPL-3

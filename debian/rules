@@ -1,0 +1,11 @@
+#!/usr/bin/make -f
+
+%:
+	dh $@ --with python2
+
+override_dh_auto_install:
+	python setup.py install --root=debian/smallsocks --install-layout=deb --install-lib=/usr/lib/smallsocks --install-scripts=/usr/lib/smallsocks
+
+override_dh_auto_build:
+
+# vim: set noet ts=4 sw=4:
