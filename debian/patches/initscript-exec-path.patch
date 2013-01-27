@@ -1,9 +1,0 @@
-Change program file location in init script.
---- a/init/smallsocks.conf
-+++ b/init/smallsocks.conf
-@@ -17,4 +17,4 @@
-     fi
- end script
- 
--exec python -OO /usr/local/bin/smallsocks
-+exec python -OO /usr/sbin/smallsocks

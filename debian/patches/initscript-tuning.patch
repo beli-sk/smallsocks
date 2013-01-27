@@ -1,0 +1,14 @@
+Change program file location in init script.
+--- a/init/smallsocks.conf
++++ b/init/smallsocks.conf
+@@ -15,6 +15,9 @@
+     if ! grep '^server_run=true$' /etc/default/smallsocks -sq; then
+         stop; exit 0
+     fi
++    mkdir -p /var/run/smallsocks
++    chown daemon:root /var/run/smallsocks
++    chmod 0750 /var/run/smallsocks
+ end script
+ 
+-exec python -OO /usr/local/bin/smallsocks
++exec python -OO /usr/sbin/smallsocks
