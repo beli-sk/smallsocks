@@ -23,11 +23,6 @@ OS support
 
 Unix-like systems with Python and syslog.
 
-Contact and support
--------------------
-
-You can discuss smallSocks on the [mailing list](https://www.coders.sk/lists/listinfo/smallsocks).
-
 Download
 --------
 
